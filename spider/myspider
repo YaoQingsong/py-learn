@@ -1,0 +1,69 @@
+import requests
+import re
+import os
+from bs4 import BeautifulSoup
+import urllib
+
+dir_path = "\home\meng" #改成自己电脑的路径
+
+url = "https://sci-hub.st/10.5014/ajot.2013.006742" 
+
+headers = {
+    'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+    'Referer': 'https://googleads.g.doubleclick.net/'
+}
+
+
+# 下载文件
+# save_path 保存路径
+# url 请求地址
+def getFile(save_path, url, file_name):
+    # file_name = url.split('/')[-1]
+    u = urllib.request.urlopen(url)
+    f = open(os.path.join(save_path,file_name), 'wb')
+
+    block_sz = 8192
+    while True:
+        buffer = u.read(block_sz)
+        if not buffer:
+            break
+
+        f.write(buffer)
+    f.close()
+    print("Sucessful to download" + " " + file_name)
+
+
+
+res = requests.get(url, headers=headers)
+print('\n响应结果是：', res)
+print('访问的地址是：', res.url)
+
+try:
+    soup = BeautifulSoup(res.text, features='lxml')
+    pdf_URL = soup.button['onclick']
+
+    file_name = soup.find(id="citation")
+
+except:
+    print("下载链接解析失败！")
+
+print(pdf_URL)
+pdf_URL = re.search(re.compile('\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|].pdf'), pdf_URL).group()
+print(pdf_URL)
+if not re.search(re.compile('^https://'), pdf_URL):
+
+    if re.search(re.compile('\/download'), pdf_URL):
+        pdf_URL = 'https://sci-hub.st' + pdf_URL
+    else:
+        pdf_URL = 'https:/' + pdf_URL
+
+    print('PDF的地址是：', pdf_URL)
+    print('保存的位置在：', dir_path)
+
+try:
+    print('\n正在下载')
+    getFile(dir_path, pdf_URL, file_name)
+
+except:
+    print("该文章为空")
